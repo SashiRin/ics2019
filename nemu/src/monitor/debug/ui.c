@@ -60,6 +60,29 @@ static int cmd_info(char *args) {
   return 0;
 }
 
+static int cmd_x(char *args) {
+  char *cnt = strtok(NULL, " ");
+  if (cnt == NULL) {
+    printf("invalid args\nusage: x N address\n");
+    return 0;
+  }
+  int N = atoi(cnt);
+  char *address = strtok(NULL, " ");
+  if (address == NULL) {
+    printf("invalid args\nusage: x N address\n");
+    return 0;
+  }
+  uint32_t addr;
+  sscanf(address, "%x", &addr);
+  uint32_t val;
+  for (int i = 0; i < N; ++i) {
+    val = vaddr_read(addr + (i << 2), 4);
+    printf("%08x ", val);
+  }
+  printf("\n");
+  return 0;
+}
+
 static struct {
   char *name;
   char *description;
@@ -70,6 +93,7 @@ static struct {
   { "q", "Exit NEMU", cmd_q },
   { "si", "Single execution", cmd_si },
   { "info", "Show information of program status", cmd_info },
+  { "x", "Scan memory", cmd_x },
 
   /* TODO: Add more commands */
 
