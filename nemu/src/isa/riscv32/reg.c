@@ -8,6 +8,10 @@ const char *regsl[] = {
 };
 
 void isa_reg_display() {
+  for (int i = 0; i < 32; ++i) {
+    printf("%s\t0x%08x\n", reg_name(i, -1), reg_l(i));
+  }
+  printf("pc\t0x%x\n", cpu.pc);
 }
 
 uint32_t isa_reg_str2val(const char *s, bool *success) {

@@ -19,6 +19,8 @@ static inline int check_reg_index(int index) {
   return index;
 }
 
+void isa_reg_display();
+
 #define reg_l(index) (cpu.gpr[check_reg_index(index)]._32)
 
 static inline const char* reg_name(int index, int width) {
