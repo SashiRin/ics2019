@@ -88,6 +88,17 @@ static int cmd_x(char *args) {
   return 0;
 }
 
+static int cmd_p(char *args) {
+  bool success = true;
+  uint32_t val = expr(args, &success);
+  if (success == false) {
+    printf("Expr evaluation failed.\n");
+    return 0;
+  }
+  printf("%s = 0x%08x\n", args, val);
+  return 0;
+}
+
 static struct {
   char *name;
   char *description;
@@ -99,6 +110,7 @@ static struct {
   { "si", "Single execution", cmd_si },
   { "info", "Show information of program status", cmd_info },
   { "x", "Scan memory", cmd_x },
+  { "p", "Expr evaluation", cmd_p },
 
   /* TODO: Add more commands */
 
