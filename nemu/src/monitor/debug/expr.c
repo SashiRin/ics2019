@@ -1,4 +1,5 @@
 #include "nemu.h"
+#include "monitor/expr.h"
 
 /* We use the POSIX regex functions to process regular expressions.
  * Type 'man regex' for more information about POSIX regex functions.
@@ -73,12 +74,6 @@ enum {
   OP_LV11 = 110, // &&
   OP_LV12 = 120, // ||
 };
-
-typedef struct token {
-  int type;
-  int precedence;
-  char str[32];
-} Token;
 
 static Token tokens[32] __attribute__((used)) = {};
 static int nr_token __attribute__((used))  = 0;

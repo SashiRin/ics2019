@@ -53,7 +53,7 @@ static int cmd_info(char *args) {
   if (strcmp(arg, "r") == 0) {
     isa_reg_display();
   } else if (strcmp(arg, "w") == 0) {
-    // TODO
+    wp_display();
   } else {
     printf("Unknown command '%s'\n", arg);
   }
@@ -99,6 +99,27 @@ static int cmd_p(char *args) {
   return 0;
 }
 
+static int cmd_w(char *args) {
+  bool success = true;
+  uint32_t val = expr(args, &success);
+  if (success == false) {
+    printf("Expr evaluation failed.\n");
+    return 0;    
+  }
+  WP* wp = new_wp();
+  wp->val = val;
+  strcpy(wp->expression, args);
+  Log("wp %d set: %s = 0x%08x", wp->NO, wp->expression, wp->val);
+  return 0;
+}
+
+static int cmd_d(char *args) {
+  int NO = atoi(args);
+  WP* wp = wp_no2ptr(NO);
+  free_wp(wp);
+  return 0;
+}
+
 static struct {
   char *name;
   char *description;
@@ -111,6 +132,8 @@ static struct {
   { "info", "Show information of program status", cmd_info },
   { "x", "Scan memory", cmd_x },
   { "p", "Expr evaluation", cmd_p },
+  { "w", "Set watchpoint", cmd_w },
+  { "d", "Delete watchpoint", cmd_d },
 
   /* TODO: Add more commands */
 
