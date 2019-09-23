@@ -7,7 +7,7 @@
 #include <regex.h>
 
 enum {
-  TK_NOTYPE = 256, TK_EQ, TK_NUMBER, TK_REGISTER
+  TK_NOTYPE = 256, TK_EQ, TK_NUMBER, TK_REGISTER, TK_MINUS, TK_DEREFERENCE
 
   /* TODO: Add more token types */
 
@@ -24,13 +24,13 @@ static struct rule {
 
   {" +", TK_NOTYPE},    // spaces
   {"\\+", '+'},         // plus
-  {"\\-", '-'},         // 
+  {"\\-", '-'},
   {"\\*", '*'},
   {"/", '/'},
   {"\\(", '('},
   {"\\)", ')'},
   {"\\$[a-zA-Z0-9]+", TK_REGISTER},
-  {"0[xX][0-9a-fA-F]+", TK_NUMBER},
+  {"0[xX][0-9a-fA-F]+", TK_NUMBER},  // hex
   {"0|[1-9][0-9]*", TK_NUMBER},
   {"==", TK_EQ}         // equal
 };
@@ -223,7 +223,10 @@ uint32_t eval(int p, int q, bool *success) {
         op = i;
       }
     }
-    uint32_t val1 = eval(p, op - 1, success);
+    uint32_t val1 = 0;
+    if (tokens[op].type != TK_DEREFERENCE && tokens[op].type != TK_MINUS) {
+      val1 = eval(p, op - 1, success);
+    }
     uint32_t val2 = eval(op + 1, q, success);
     switch (tokens[op].type) {
       case '+':
@@ -236,7 +239,17 @@ uint32_t eval(int p, int q, bool *success) {
         return val1 * val2;
         break;
       case '/':
+        if (val2 == 0) {
+          panic("Division by zero!!");
+        }
         return val1 / val2;
+        break;
+      // TK_DEREFERENCE and TK_MINUS do not support recursive expr evaluation
+      case TK_DEREFERENCE:
+        return vaddr_read(val2, 4);
+        break;
+      case TK_MINUS:
+        return -val2;
         break;
 
       default:
@@ -246,24 +259,52 @@ uint32_t eval(int p, int q, bool *success) {
   }
 }
 
+bool check_unary(int token_type) {
+  return (
+    token_type == '('
+    || token_type == '+'
+    || token_type == '-'
+    || token_type == '*'
+    || token_type == '/'
+    || token_type == TK_MINUS
+    || token_type == TK_DEREFERENCE
+  );
+}
+
 uint32_t expr(char *e, bool *success) {
   if (!make_token(e)) {
     *success = false;
     return 0;
   }
+
+  // recognize TK_DEREFERENCE and TK_MINUS
+  for (int i = 0; i < nr_token; ++i) {
+    if (tokens[i].type == '*' && (i == 0 || check_unary(tokens[i - 1].type))) {
+      tokens[i].type = TK_DEREFERENCE;
+      tokens[i].precedence = OP_LV2_2;
+    }
+    if (tokens[i].type == '-' && (i == 0 || check_unary(tokens[i - 1].type))) {
+      tokens[i].type = TK_MINUS;
+      tokens[i].precedence = OP_LV2_1;
+    }
+  }
   
-  // Log("nr_token: %d\n", nr_token);
-  // for (int i = 0; i < nr_token; ++i) {
-  //   if (tokens[i].type < 256) {
-  //     Log("%c\n", tokens[i].type);
-  //   } else {
-  //     if (tokens[i].type == TK_NUMBER) {
-  //       Log("number: %s\n", tokens[i].str);
-  //     } else if (tokens[i].type == TK_REGISTER) {
-  //       Log("register: %s\n", tokens[i].str);
-  //     }
-  //   }
-  // }
+  Log("nr_token: %d\n", nr_token);
+  for (int i = 0; i < nr_token; ++i) {
+    if (tokens[i].type < 256) {
+      Log("%c\n", tokens[i].type);
+    } else {
+      if (tokens[i].type == TK_NUMBER) {
+        Log("number: %s\n", tokens[i].str);
+      } else if (tokens[i].type == TK_REGISTER) {
+        Log("register: %s\n", tokens[i].str);
+      } else if (tokens[i].type == TK_MINUS) {
+        Log("minus: %s\n", "-");
+      } else if (tokens[i].type == TK_DEREFERENCE) {
+        Log("dereference: %s\n", "*");
+      }
+    }
+  }
 
   /* TODO: Insert codes to evaluate the expression. */
   return eval(0, nr_token - 1, success);
