@@ -7,7 +7,8 @@
 #include <regex.h>
 
 enum {
-  TK_NOTYPE = 256, TK_EQ, TK_NUMBER, TK_REGISTER, TK_MINUS, TK_DEREFERENCE
+  TK_NOTYPE = 256, TK_EQ, TK_NUMBER, TK_REGISTER, TK_MINUS, TK_DEREFERENCE,
+  TK_NOTEQ, TK_AND, TK_OR
 
   /* TODO: Add more token types */
 
@@ -32,6 +33,9 @@ static struct rule {
   {"\\$[a-zA-Z0-9]+", TK_REGISTER},
   {"0[xX][0-9a-fA-F]+", TK_NUMBER},  // hex
   {"0|[1-9][0-9]*", TK_NUMBER},
+  {"!=", TK_NOTEQ},
+  {"&&", TK_AND},
+  {"\\|\\|", TK_OR},
   {"==", TK_EQ}         // equal
 };
 
@@ -56,6 +60,8 @@ void init_regex() {
   }
 }
 
+// Operator Precedence of C
+// https://en.cppreference.com/w/c/language/operator_precedence
 enum {
   OP_LV0 = 0, // number, register
   OP_LV1 = 10, // ()
@@ -63,6 +69,9 @@ enum {
   OP_LV2_2 = 22, // deference *
   OP_LV3 = 30, // *, /, %
   OP_LV4 = 40, // +, -
+  OP_LV7 = 70, // ==, !=
+  OP_LV11 = 110, // &&
+  OP_LV12 = 120, // ||
 };
 
 typedef struct token {
@@ -127,6 +136,22 @@ static bool make_token(char *e) {
             tokens[nr_token].type = rules[i].token_type;
             strncpy(tokens[nr_token].str, substr_start, substr_len);
             tokens[nr_token].precedence = OP_LV0;
+            ++nr_token;
+            break;
+          case TK_EQ:
+          case TK_NOTEQ:
+            tokens[nr_token].type = rules[i].token_type;
+            tokens[nr_token].precedence = OP_LV7;
+            ++nr_token;
+            break;
+          case TK_AND:
+            tokens[nr_token].type = rules[i].token_type;
+            tokens[nr_token].precedence = OP_LV11;
+            ++nr_token;
+            break;
+          case TK_OR:
+            tokens[nr_token].type = rules[i].token_type;
+            tokens[nr_token].precedence = OP_LV12;
             ++nr_token;
             break;
           default:
@@ -251,6 +276,18 @@ uint32_t eval(int p, int q, bool *success) {
       case TK_MINUS:
         return -val2;
         break;
+      case TK_EQ:
+        return (val1 == val2);
+        break;
+      case TK_NOTEQ:
+        return (val1 != val2);
+        break;
+      case TK_AND:
+        return (val1 && val2);
+        break;
+      case TK_OR:
+        return (val1 || val2);
+        break;
 
       default:
         Log("Unhandled op %s\n", tokens[op].str);
@@ -289,22 +326,22 @@ uint32_t expr(char *e, bool *success) {
     }
   }
   
-  Log("nr_token: %d\n", nr_token);
-  for (int i = 0; i < nr_token; ++i) {
-    if (tokens[i].type < 256) {
-      Log("%c\n", tokens[i].type);
-    } else {
-      if (tokens[i].type == TK_NUMBER) {
-        Log("number: %s\n", tokens[i].str);
-      } else if (tokens[i].type == TK_REGISTER) {
-        Log("register: %s\n", tokens[i].str);
-      } else if (tokens[i].type == TK_MINUS) {
-        Log("minus: %s\n", "-");
-      } else if (tokens[i].type == TK_DEREFERENCE) {
-        Log("dereference: %s\n", "*");
-      }
-    }
-  }
+  // Log("nr_token: %d", nr_token);
+  // for (int i = 0; i < nr_token; ++i) {
+  //   if (tokens[i].type < 256) {
+  //     Log("%c", tokens[i].type);
+  //   } else {
+  //     if (tokens[i].type == TK_NUMBER) {
+  //       Log("number: %s", tokens[i].str);
+  //     } else if (tokens[i].type == TK_REGISTER) {
+  //       Log("register: %s", tokens[i].str);
+  //     } else if (tokens[i].type == TK_MINUS) {
+  //       Log("minus: %s", "-");
+  //     } else if (tokens[i].type == TK_DEREFERENCE) {
+  //       Log("dereference: %s", "*");
+  //     }
+  //   }
+  // }
 
   /* TODO: Insert codes to evaluate the expression. */
   return eval(0, nr_token - 1, success);
