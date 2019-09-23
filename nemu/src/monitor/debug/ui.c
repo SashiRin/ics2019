@@ -61,22 +61,27 @@ static int cmd_info(char *args) {
 }
 
 static int cmd_x(char *args) {
-  char *cnt = strtok(NULL, " ");
-  if (cnt == NULL) {
+  char *scan_num_str = strtok(NULL, " ");
+  if (scan_num_str == NULL) {
     printf("invalid args\nusage: x N address\n");
     return 0;
   }
-  int N = atoi(cnt);
-  char *address = strtok(NULL, " ");
-  if (address == NULL) {
+  int scan_num = atoi(scan_num_str);
+  char *expression = scan_num_str + strlen(scan_num_str) + 1;
+  if (expression == NULL) {
     printf("invalid args\nusage: x N address\n");
     return 0;
   }
-  uint32_t addr;
-  sscanf(address, "%x", &addr);
+  uint32_t expr_val;
+  bool success = true;
+  expr_val = expr(expression, &success);
+  if (success == false) {
+    Log("Expr evaluation failed.");
+    assert(0);
+  }
   uint32_t val;
-  for (int i = 0; i < N; ++i) {
-    val = vaddr_read(addr + (i << 2), 4);
+  for (int i = 0; i < scan_num; ++i) {
+    val = vaddr_read(expr_val + (i << 2), 4);
     printf("%08x ", val);
   }
   printf("\n");
