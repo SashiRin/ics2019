@@ -1,7 +1,7 @@
 NAME = nemu
 
 ifneq ($(MAKECMDGOALS),clean) # ignore check for make clean
-ISA ?= x86
+ISA ?= riscv32
 ISAS = $(shell ls src/isa/)
 $(info Building $(ISA)-$(NAME))
 
@@ -22,7 +22,7 @@ endif
 OBJ_DIR ?= $(BUILD_DIR)/obj-$(ISA)$(SO)
 BINARY ?= $(BUILD_DIR)/$(ISA)-$(NAME)$(SO)
 
-include Makefile.git
+# include Makefile.git
 
 .DEFAULT_GOAL = app
 
@@ -66,18 +66,18 @@ IMG :=
 NEMU_EXEC := $(BINARY) $(ARGS) $(IMG)
 
 $(BINARY): $(OBJS)
-	$(call git_commit, "compile")
+	# $(call git_commit, "compile")
 	@echo + LD $@
 	@$(LD) -O2 -rdynamic $(SO_LDLAGS) -o $@ $^ -lSDL2 -lreadline -ldl
 
 run-env: $(BINARY) $(QEMU_SO)
 
 run: run-env
-	$(call git_commit, "run")
+	# $(call git_commit, "run")
 	$(NEMU_EXEC)
 
 gdb: run-env
-	$(call git_commit, "gdb")
+	# $(call git_commit, "gdb")
 	gdb -s $(BINARY) --args $(NEMU_EXEC)
 
 clean:

@@ -38,6 +38,88 @@ static int cmd_q(char *args) {
 
 static int cmd_help(char *args);
 
+static int cmd_si(char *args) {
+  char *arg = strtok(NULL, " ");
+  uint64_t N = 1;
+  if (arg != NULL) {
+    N = strtoull(arg, NULL, 10);
+  }
+  cpu_exec(N);
+  return 0;
+}
+
+static int cmd_info(char *args) {
+  char *arg = strtok(NULL, " ");
+  if (strcmp(arg, "r") == 0) {
+    isa_reg_display();
+  } else if (strcmp(arg, "w") == 0) {
+    wp_display();
+  } else {
+    printf("Unknown command '%s'\n", arg);
+  }
+  return 0;
+}
+
+static int cmd_x(char *args) {
+  char *scan_num_str = strtok(NULL, " ");
+  if (scan_num_str == NULL) {
+    printf("invalid args\nusage: x N address\n");
+    return 0;
+  }
+  int scan_num = atoi(scan_num_str);
+  char *expression = scan_num_str + strlen(scan_num_str) + 1;
+  if (expression == NULL) {
+    printf("invalid args\nusage: x N address\n");
+    return 0;
+  }
+  uint32_t expr_val;
+  bool success = true;
+  expr_val = expr(expression, &success);
+  if (success == false) {
+    Log("Expr evaluation failed.");
+    assert(0);
+  }
+  uint32_t val;
+  for (int i = 0; i < scan_num; ++i) {
+    val = vaddr_read(expr_val + (i << 2), 4);
+    printf("%08x ", val);
+  }
+  printf("\n");
+  return 0;
+}
+
+static int cmd_p(char *args) {
+  bool success = true;
+  uint32_t val = expr(args, &success);
+  if (success == false) {
+    printf("Expr evaluation failed.\n");
+    return 0;
+  }
+  printf("%s = 0x%08x\n", args, val);
+  return 0;
+}
+
+static int cmd_w(char *args) {
+  bool success = true;
+  uint32_t val = expr(args, &success);
+  if (success == false) {
+    printf("Expr evaluation failed.\n");
+    return 0;    
+  }
+  WP* wp = new_wp();
+  wp->val = val;
+  strcpy(wp->expression, args);
+  Log("wp %d set: %s = 0x%08x", wp->NO, wp->expression, wp->val);
+  return 0;
+}
+
+static int cmd_d(char *args) {
+  int NO = atoi(args);
+  WP* wp = wp_no2ptr(NO);
+  free_wp(wp);
+  return 0;
+}
+
 static struct {
   char *name;
   char *description;
@@ -46,6 +128,12 @@ static struct {
   { "help", "Display informations about all supported commands", cmd_help },
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
+  { "si", "Single execution", cmd_si },
+  { "info", "Show information of program status", cmd_info },
+  { "x", "Scan memory", cmd_x },
+  { "p", "Expr evaluation", cmd_p },
+  { "w", "Set watchpoint", cmd_w },
+  { "d", "Delete watchpoint", cmd_d },
 
   /* TODO: Add more commands */
 
