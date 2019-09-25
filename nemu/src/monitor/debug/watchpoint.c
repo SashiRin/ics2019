@@ -56,8 +56,13 @@ WP* wp_no2ptr(int NO) {
 
 void wp_display() {
   WP* curr = head;
+  if (curr == NULL) {
+    printf("No watchpoints.\n");
+    return;
+  }
+  printf("Num\tExpr\tValue\n");
   while (curr) {
-    printf("wp %d\t%s = 0x%08x\n", curr->NO, curr->expression, curr->val);
+    printf("%d\t%s\t0x%08x\n", curr->NO, curr->expression, curr->val);
     curr = curr->next;
   }
 }
