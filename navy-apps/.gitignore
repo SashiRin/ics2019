@@ -1,11 +1,9 @@
-*.*
-*
-!*/
-!Makefile*
-!*.[cSh]
+!*
+.*
 !.gitignore
-!README.md
-!runall.sh
+*.o
+*.a
+*.d
 *.img
 build/
 /fsimg/bin/
